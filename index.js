@@ -111,7 +111,7 @@ app.post("/booking", async (req, res) => {
 
         const studioId = String(data.studioId || "");
 
-        // Required information check
+        // Required information chec
         if (!studioId || !data.userEmail || !data.date || !data.time) {
             return res.send({
                 message: "Required information is missing."
