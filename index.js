@@ -24,6 +24,7 @@ export async function connectToMongoDB() {
 const connectClient = await connectToMongoDB()
 const db = connectClient.db('studio-space')
 const studiosCollection = db.collection('studios')
+const bookingCollection = db.collection('booking')
 
 
 app.get('/', (req, res) => {
@@ -70,6 +71,26 @@ app.delete('/my-listings/:id', async (req, res) => {
     const id = req.params.id
     const query = { _id: new ObjectId(id) }
     const result = await studiosCollection.deleteOne(query)
+    res.send(result)
+})
+
+app.post("/booking", async (req, res) => {
+    const data = req.body;
+    const result = await bookingCollection.insertOne(data);
+    res.send(result);
+});
+
+app.get('/my-bookings/:email', async (req, res) => {
+    const email = req.params.email
+    const query = { userEmail: email }
+    const result = await bookingCollection.find(query).toArray()
+    res.send(result)
+})
+
+app.delete('/my-bookings/:id', async (req, res) => {
+    const id = req.params.id
+    const query = { _id: new ObjectId(id) }
+    const result = await bookingCollection.deleteOne(query)
     res.send(result)
 })
 
