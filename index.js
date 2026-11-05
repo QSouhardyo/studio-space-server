@@ -26,6 +26,11 @@ const db = connectClient.db('studio-space')
 const studiosCollection = db.collection('studios')
 const bookingCollection = db.collection('booking')
 
+// একই Studio-তে একটির বেশি Booking আটকাবে
+await bookingCollection.createIndex(
+    { studioId: 1 },
+    { unique: true }
+);
 
 app.get('/', (req, res) => {
     res.send('Hello World!')
@@ -41,6 +46,29 @@ app.get('/studios', async (req, res) => {
     const result = await studiosCollection.find().toArray()
     res.send(result)
 })
+
+// Get 6 Featured Studios
+app.get("/featured-studios", async (req, res) => {
+    try {
+        const studios = await studiosCollection
+            .find()
+            .sort({
+                rating: -1,
+                createdAt: -1,
+            })
+            .limit(6)
+            .toArray();
+
+        res.send(studios);
+
+    } catch (error) {
+        console.error("Featured Studios Error:", error);
+
+        res.status(500).send({
+            message: "Failed to fetch featured studios",
+        });
+    }
+});
 
 app.get('/studios/:id', async (req, res) => {
     const id = req.params.id
@@ -75,9 +103,87 @@ app.delete('/my-listings/:id', async (req, res) => {
 })
 
 app.post("/booking", async (req, res) => {
-    const data = req.body;
-    const result = await bookingCollection.insertOne(data);
-    res.send(result);
+    // const data = req.body;
+    // const result = await bookingCollection.insertOne(data);
+    // res.send(result);
+    app.post("/booking", async (req, res) => {
+        try {
+            const data = req.body;
+
+            const studioId = String(data.studioId || "");
+
+            // Required information check
+            if (!studioId || !data.userEmail || !data.date || !data.time) {
+                return res.send({
+                    message: "Required information is missing."
+                });
+            }
+
+            // Check studio ID
+            if (!ObjectId.isValid(studioId)) {
+                return res.send({
+                    message: "Invalid studio ID."
+                });
+            }
+
+            // Check studio exists
+            const studio = await studiosCollection.findOne({
+                _id: new ObjectId(studioId)
+            });
+
+            if (!studio) {
+                return res.send({
+                    message: "Studio not found."
+                });
+            }
+
+            const bookingData = {
+                ...data,
+                studioId,
+                status: "pending",
+                createdAt: new Date()
+            };
+
+            const result = await bookingCollection.insertOne(bookingData);
+
+            res.send(result);
+
+        } catch (error) {
+            if (error.code === 11000) {
+                return res.send({
+                    message: "This studio is already booked."
+                });
+            }
+
+            console.error("Booking Error:", error);
+
+            res.send({
+                message: "Booking failed!"
+            });
+        }
+    });
+});
+
+// Check Studio Booking Availability
+app.get("/booking/studio/:studioId", async (req, res) => {
+    try {
+        const studioId = String(req.params.studioId);
+
+        const booking = await bookingCollection.findOne({
+            studioId: studioId
+        });
+
+        res.send({
+            booked: Boolean(booking)
+        });
+
+    } catch (error) {
+        console.error("Availability Check Error:", error);
+
+        res.send({
+            message: "Failed to check booking availability."
+        });
+    }
 });
 
 app.get('/my-bookings/:email', async (req, res) => {
@@ -97,3 +203,8 @@ app.delete('/my-bookings/:id', async (req, res) => {
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
 })
+
+
+
+
+
