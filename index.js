@@ -106,62 +106,61 @@ app.post("/booking", async (req, res) => {
     // const data = req.body;
     // const result = await bookingCollection.insertOne(data);
     // res.send(result);
-    app.post("/booking", async (req, res) => {
-        try {
-            const data = req.body;
+    try {
+        const data = req.body;
 
-            const studioId = String(data.studioId || "");
+        const studioId = String(data.studioId || "");
 
-            // Required information check
-            if (!studioId || !data.userEmail || !data.date || !data.time) {
-                return res.send({
-                    message: "Required information is missing."
-                });
-            }
-
-            // Check studio ID
-            if (!ObjectId.isValid(studioId)) {
-                return res.send({
-                    message: "Invalid studio ID."
-                });
-            }
-
-            // Check studio exists
-            const studio = await studiosCollection.findOne({
-                _id: new ObjectId(studioId)
-            });
-
-            if (!studio) {
-                return res.send({
-                    message: "Studio not found."
-                });
-            }
-
-            const bookingData = {
-                ...data,
-                studioId,
-                status: "pending",
-                createdAt: new Date()
-            };
-
-            const result = await bookingCollection.insertOne(bookingData);
-
-            res.send(result);
-
-        } catch (error) {
-            if (error.code === 11000) {
-                return res.send({
-                    message: "This studio is already booked."
-                });
-            }
-
-            console.error("Booking Error:", error);
-
-            res.send({
-                message: "Booking failed!"
+        // Required information check
+        if (!studioId || !data.userEmail || !data.date || !data.time) {
+            return res.send({
+                message: "Required information is missing."
             });
         }
-    });
+
+        // Check studio ID
+        if (!ObjectId.isValid(studioId)) {
+            return res.send({
+                message: "Invalid studio ID."
+            });
+        }
+
+        // Check studio exists
+        const studio = await studiosCollection.findOne({
+            _id: new ObjectId(studioId)
+        });
+
+        if (!studio) {
+            return res.send({
+                message: "Studio not found."
+            });
+        }
+
+        const bookingData = {
+            ...data,
+            studioId,
+            status: "pending",
+            createdAt: new Date()
+        };
+
+        const result = await bookingCollection.insertOne(bookingData);
+
+        res.send(result);
+
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.send({
+                message: "This studio is already booked."
+            });
+        }
+
+        console.error("Booking Error:", error);
+
+        res.send({
+            message: "Booking failed!"
+        });
+    }
+    ;
 });
 
 // Check Studio Booking Availability
@@ -204,7 +203,7 @@ app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
 })
 
-
+export default app
 
 
 
