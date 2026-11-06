@@ -32,11 +32,20 @@ await bookingCollection.createIndex(
     { unique: true }
 );
 
+// const veryfyApi = async (req, res, next) => {
+
+
+// }
+
 app.get('/', (req, res) => {
     res.send('Hello World!')
 })
 
 app.post('/add-studio', async (req, res) => {
+    const authHeader = req.headers.authorization
+
+    console.log(authHeader);
+
     const data = req.body
     const result = await studiosCollection.insertOne(data)
     res.send(result)
