@@ -130,7 +130,7 @@ app.delete('/my-listings/:id', verifyToken, async (req, res) => {
     res.send(result)
 })
 
-app.post("/booking", async (req, res) => {
+app.post("/booking", verifyToken, async (req, res) => {
     // const data = req.body;
     // const result = await bookingCollection.insertOne(data);
     // res.send(result);
