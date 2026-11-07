@@ -1,13 +1,15 @@
 import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
+import { MongoClient, ObjectId } from 'mongodb';
+import { createRemoteJWKSet, jwtVerify } from 'jose'
 const app = express()
 const port = 5000
 
 app.use(cors())
 app.use(express.json())
 
-import { MongoClient, ObjectId } from 'mongodb';
+
 
 const client = new MongoClient(process.env.MONGODB_URL);
 
@@ -32,20 +34,37 @@ await bookingCollection.createIndex(
     { unique: true }
 );
 
-// const veryfyApi = async (req, res, next) => {
+const verifyToken = async (req, res, next) => {
+    const authHeader = req.headers.authorization
 
+    if (!authHeader) {
+        return res.status(401).send({ msg: "Unauthorized" })
+    }
 
-// }
+    const token = authHeader.split(' ')[1]
+
+    console.log(token);
+    if (!token) {
+        return res.status(401).send({ msg: "Unauthorized" })
+    }
+    const JWKS = createRemoteJWKSet(
+        new URL('http://localhost:3000/api/auth/jwks')
+    )
+
+    try {
+        const { payload } = await jwtVerify(token, JWKS)
+        next()
+    }
+    catch (error) {
+        return res.status(500).send({ msg: 'Server Error' })
+    }
+}
 
 app.get('/', (req, res) => {
     res.send('Hello World!')
 })
 
-app.post('/add-studio', async (req, res) => {
-    const authHeader = req.headers.authorization
-
-    console.log(authHeader);
-
+app.post('/add-studio', verifyToken, async (req, res) => {
     const data = req.body
     const result = await studiosCollection.insertOne(data)
     res.send(result)
@@ -104,7 +123,7 @@ app.get('/my-listings/:email', async (req, res) => {
     res.send(result)
 })
 
-app.delete('/my-listings/:id', async (req, res) => {
+app.delete('/my-listings/:id', verifyToken, async (req, res) => {
     const id = req.params.id
     const query = { _id: new ObjectId(id) }
     const result = await studiosCollection.deleteOne(query)
